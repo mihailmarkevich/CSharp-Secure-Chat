@@ -74,14 +74,18 @@
       <textarea
         [(ngModel)]="messageText"
         (keydown)="onMessageKeydown($event)"
-        [disabled]="!isConnected || !!banInfo"
+        [disabled]="!isConnected || !!banInfo || !nameConfirmed"
         maxlength="500"
         rows="2"
-        placeholder="Type your message and press Enter to send. Shift+Enter for new line."
+        [placeholder]="
+          nameConfirmed
+            ? 'Type your message and press Enter to send. Shift+Enter for new line.'
+            : 'Set your name first, then you can send messages.'
+        "
       ></textarea>
       <button
         (click)="onSendMessage()"
-        [disabled]="!messageText.trim() || !isConnected || !!banInfo"
+        [disabled]="!messageText.trim() || !isConnected || !!banInfo || !nameConfirmed"
       >
         Send
       </button>

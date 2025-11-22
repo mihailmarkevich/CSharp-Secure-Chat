@@ -5,8 +5,20 @@ using Server.Infrastructure.Chat;
 using Server.Infrastructure.Security;
 using Server.Web.Hubs;
 using Server.Web.Middleware;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    // Clear lists to trust any proxy
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // CORS
 var allowedOrigins = builder.Configuration
@@ -50,6 +62,8 @@ builder.Services.AddLogging(logging =>
 builder.Services.AddSignalR();
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 // prod doesn't needs CORS settings, it hosts static files
 if (app.Environment.IsDevelopment())

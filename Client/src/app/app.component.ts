@@ -25,6 +25,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('messageContainer') messageContainer?: ElementRef<HTMLDivElement>;
 
+  nameConfirmed = false;
   displayName = '';
   messageText = '';
 
@@ -49,9 +50,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         this.connectionError = err;
       }),
       this.chat.currentName$.subscribe(name => {
-        if (!this.displayName) {
-          this.displayName = name;
-        }
+        this.nameConfirmed = !!name;
+
+        this.displayName = name;
       })
     );
 

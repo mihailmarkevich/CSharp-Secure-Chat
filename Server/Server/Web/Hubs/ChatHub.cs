@@ -151,21 +151,9 @@ namespace Server.Web.Hubs
                 _ipConnectionCounts.AddOrUpdate(ip, 1, (_, current) => current + 1);
                 _connectionIps[Context.ConnectionId] = ip;
 
-                var defaultName = $"User-{Context.ConnectionId[..5]}";
-
-                if (!_userNames.TryAdd(Context.ConnectionId, defaultName))
-                {
-                    _logger.LogWarning(
-                        "Could not add user for connection {ConnectionId}. Entry already exists with value: {ExistingUserName}",
-                        Context.ConnectionId,
-                        _userNames[Context.ConnectionId]);
-
-                    _userNames[Context.ConnectionId] = defaultName;
-                }
-
                 _logger.LogInformation(
-                "Client connected: {ConnectionId} as {UserName} from IP {Ip} (connections from this IP: {Count})",
-                Context.ConnectionId, defaultName, ip, _ipConnectionCounts[ip]);
+                    "Client connected: {ConnectionId} from IP {Ip} (connections from this IP: {Count})",
+                    Context.ConnectionId, ip, _ipConnectionCounts[ip]);
 
                 await base.OnConnectedAsync();
 
@@ -289,6 +277,15 @@ namespace Server.Web.Hubs
                     return;
                 }
 
+                if (!_userNames.TryGetValue(Context.ConnectionId, out var userName) || string.IsNullOrWhiteSpace(userName))
+                {
+                    _logger.LogWarning(
+                        "Blocked message from {ConnectionId} (IP {Ip}) because user name is not set.",
+                        Context.ConnectionId, ip);
+
+                    return;
+                }
+
                 text = TextHelper.SanitizePlainText(text, 500, allowNewLines: true);
 
                 if (string.IsNullOrEmpty(text))
@@ -297,14 +294,6 @@ namespace Server.Web.Hubs
                         "Sanitized message is empty from {ConnectionId} (IP {Ip})",
                         Context.ConnectionId, ip);
                     return;
-                }
-
-                if (!_userNames.TryGetValue(Context.ConnectionId, out var userName))
-                {
-                    userName = "Unknown";
-                    _logger.LogWarning(
-                        "User name was not found for connection {ConnectionId} when sending a message. Using fallback 'Unknown'. IP {Ip}",
-                        Context.ConnectionId, ip);
                 }
 
                 var message = new ChatMessage
