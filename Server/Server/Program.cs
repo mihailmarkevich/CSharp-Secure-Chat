@@ -51,9 +51,21 @@ builder.Services.AddSignalR();
 
 var app = builder.Build();
 
-app.UseCors();
+// prod doesn't needs CORS settings, it hosts static files
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors();
+}
 
 app.UseMiddleware<IpBanMiddleware>();
+
+// Static files hosting only in prod
+if (!app.Environment.IsDevelopment())
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+    app.MapFallbackToFile("/index.html");
+}
 
 app.MapHub<ChatHub>("/chathub");
 
