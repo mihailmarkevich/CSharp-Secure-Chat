@@ -9,10 +9,8 @@ using Server.Web.Middleware;
 var builder = WebApplication.CreateBuilder(args);
 
 // CORS
-// TODO: move AllowedOrigins to be a separate value
-// TODO: take care of AllowedHosts value
 var allowedOrigins = builder.Configuration
-    .GetSection("Cors:AllowedOrigins")
+    .GetSection("AllowedOrigins")
     .Get<string[]>() ?? Array.Empty<string>();
 
 builder.Services.AddCors(options =>
@@ -60,3 +58,6 @@ app.UseMiddleware<IpBanMiddleware>();
 app.MapHub<ChatHub>("/chathub");
 
 app.Run();
+
+
+public partial class Program { }

@@ -209,7 +209,6 @@ namespace Server.Web.Hubs
                         Context.ConnectionId, ip ?? UnknownIp);
                 }
 
-                // TODO: does Context.Abort really diconnects?
                 await base.OnDisconnectedAsync(exception);
             }
             catch (Exception ex)

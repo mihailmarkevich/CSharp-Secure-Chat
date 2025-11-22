@@ -7,13 +7,15 @@ namespace Server.Infrastructure.Chat
     public sealed class InMemoryMessageStore : IMessageStore
     {
         private readonly ConcurrentQueue<ChatMessage> _messages = new();
-        private long _lastId = 0;
 
         public Task AddAsync(ChatMessage message)
         {
-            message.Id = Interlocked.Increment(ref _lastId);
+            if (message.Id == Guid.Empty)
+            {
+                message.Id = Guid.NewGuid();
+            }
+
             _messages.Enqueue(message);
-            // Optional: you may want to cap the queue size.
             return Task.CompletedTask;
         }
 
@@ -33,4 +35,5 @@ namespace Server.Infrastructure.Chat
             return Task.FromResult<IReadOnlyList<ChatMessage>>(sliced);
         }
     }
+
 }
