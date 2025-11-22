@@ -319,6 +319,7 @@ namespace Server.Web.Hubs
                 await Clients.All.SendAsync(
                     "ReceiveMessage",
                     message.Id,
+                    Context.ConnectionId,
                     message.UserName,
                     message.Text,
                     message.Timestamp);

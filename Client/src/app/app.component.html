@@ -1,0 +1,88 @@
+<div class="app-root">
+  <div class="chat-container">
+    <header class="chat-header">
+      <div class="title">Secure Chat</div>
+      <div class="status">
+        <span
+          class="status-indicator"
+          [class.connected]="isConnected"
+          [class.disconnected]="!isConnected"
+        ></span>
+        <span>{{ isConnected ? 'Connected' : 'Disconnected' }}</span>
+      </div>
+    </header>
+
+    <section class="notifications">
+      <div *ngIf="banInfo" class="banner banner-error">
+        <strong>Banned:</strong>
+        <span>{{ banInfo.message }}</span>
+        <span *ngIf="banInfo.retryAfterSeconds">
+          (Retry after {{ banInfo.retryAfterSeconds }}s)
+        </span>
+      </div>
+
+      <div *ngIf="connectionError && !banInfo" class="banner banner-warning">
+        {{ connectionError }}
+      </div>
+    </section>
+
+    <section class="user-settings">
+      <label>
+        Your name:
+        <input
+          type="text"
+          [(ngModel)]="displayName"
+          maxlength="50"
+          placeholder="Enter your name"
+        />
+      </label>
+      <button
+        (click)="onSetName()"
+        [disabled]="!displayName.trim() || !isConnected || !!banInfo"
+      >
+        Set name
+      </button>
+    </section>
+
+    <section class="messages-wrapper">
+      <div #messageContainer class="messages-container">
+        <div
+          *ngFor="let msg of messages"
+          class="message-row"
+          [ngClass]="{ 'own-message': isOwnMessage(msg), 'other-message': !isOwnMessage(msg) }"
+        >
+          <div class="message-meta">
+            <span class="author">{{ msg.userName }}</span>
+            <span class="timestamp">
+              {{ msg.timestamp | date: 'short' }}
+            </span>
+          </div>
+          <div class="message-text">
+            {{ msg.text }}
+          </div>
+        </div>
+
+        <div *ngIf="messages.length === 0" class="no-messages">
+          No messages yet. Start the conversation ✨
+        </div>
+      </div>
+    </section>
+
+    <section class="input-area">
+      <textarea
+        [(ngModel)]="messageText"
+        (keydown)="onMessageKeydown($event)"
+        [disabled]="!isConnected || !!banInfo"
+        maxlength="500"
+        rows="2"
+        placeholder="Type your message and press Enter to send. Shift+Enter for new line."
+      ></textarea>
+      <button
+        (click)="onSendMessage()"
+        [disabled]="!messageText.trim() || !isConnected || !!banInfo"
+      >
+        Send
+      </button>
+    </section>
+  </div>
+</div>
