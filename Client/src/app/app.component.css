@@ -127,30 +127,42 @@
   box-sizing: border-box;
   border-radius: 4px;
   background: #f9fafb;
+
+  display: flex;
+  flex-direction: column;
 }
 
 .message-row {
+  display: flex;
   margin-bottom: 8px;
+}
+
+/* чужие сообщения: слева */
+.message-row.other-message {
+  justify-content: flex-start;
+}
+
+/* свои сообщения: справа */
+.message-row.own-message {
+  justify-content: flex-end;
+}
+
+/* сам пузырь */
+.message-bubble {
   max-width: 80%;
   padding: 6px 8px;
   border-radius: 8px;
   background: #e5e7eb;
-  align-self: flex-start;
-  display: inline-block;
+  color: #111827;
 }
 
-.message-row.own-message {
+/* мой пузырь — синий */
+.message-row.own-message .message-bubble {
   background: #3b82f6;
   color: #ffffff;
-  margin-left: auto;
 }
 
-.message-row.other-message {
-  background: #e5e7eb;
-  color: #111827;
-  margin-right: auto;
-}
-
+/* мета-информация */
 .message-meta {
   display: flex;
   justify-content: space-between;
@@ -167,6 +179,7 @@
   font-style: italic;
 }
 
+/* текст сообщения */
 .message-text {
   font-size: 0.9rem;
   white-space: pre-line;

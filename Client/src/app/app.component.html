@@ -51,14 +51,16 @@
           class="message-row"
           [ngClass]="{ 'own-message': isOwnMessage(msg), 'other-message': !isOwnMessage(msg) }"
         >
-          <div class="message-meta">
-            <span class="author">{{ msg.userName }}</span>
-            <span class="timestamp">
-              {{ msg.timestamp | date: 'short' }}
-            </span>
-          </div>
-          <div class="message-text">
-            {{ msg.text }}
+          <div class="message-bubble">
+            <div class="message-meta">
+              <span class="author">{{ msg.userName }}</span>
+              <span class="timestamp">
+                {{ msg.timestamp | date: 'short' }}
+              </span>
+            </div>
+            <div class="message-text">
+              {{ msg.text }}
+            </div>
           </div>
         </div>
 

@@ -1,4 +1,5 @@
-﻿using System.Text.Encodings.Web;
+﻿using System.Text;
+using System.Text.Encodings.Web;
 
 namespace Server.Helpers
 {
@@ -7,32 +8,34 @@ namespace Server.Helpers
         /// <summary>
         /// Sanitizing plain text to prevent the XSS attach
         /// </summary>
-        public static string SanitizePlainText(string input, int maxLength, bool allowNewLines = false)
+        public static string SanitizePlainText(string? input, int maxLength, bool allowNewLines)
         {
             if (string.IsNullOrWhiteSpace(input))
                 return string.Empty;
 
-            var trimmed = input.Trim();
+            // Нормализуем Unicode, чтобы умляуты, акценты и т.п. были в нормальной форме
+            var text = input.Normalize(NormalizationForm.FormC);
 
-            if (trimmed.Length > maxLength)
-                trimmed = trimmed[..maxLength];
-
-            // remove control symbols
-            trimmed = new string(trimmed.Where(c =>
+            // Удаляем управляющие символы, кроме \r\n (если разрешены)
+            var sb = new StringBuilder(text.Length);
+            foreach (var ch in text)
             {
-                if (!char.IsControl(c))
-                    return true;
+                if (char.IsControl(ch) && ch != '\r' && ch != '\n')
+                    continue;
 
-                if (allowNewLines && (c == '\n' || c == '\r'))
-                    return true;
+                if (!allowNewLines && (ch == '\r' || ch == '\n'))
+                    continue;
 
-                return false;
-            }).ToArray());
+                sb.Append(ch);
+            }
 
-            // HTML-escaping
-            var encoded = HtmlEncoder.Default.Encode(trimmed);
+            var cleaned = sb.ToString();
 
-            return encoded;
+            // Ограничиваем длину
+            if (cleaned.Length > maxLength)
+                cleaned = cleaned[..maxLength];
+
+            return cleaned;
         }
     }
 }
