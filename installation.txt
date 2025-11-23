@@ -1,0 +1,75 @@
+CSharp Secure Chat – Installation Guide
+====================================
+
+1. Requirements
+---------------
+
+Backend:
+- .NET SDK 8.0 or higher
+
+Frontend:
+- Node.js 18.x or 20.x (LTS)
+- npm (comes with Node.js)
+- Angular CLI installed globally:
+  npm install -g @angular/cli
+
+OS:
+- Windows, Linux or macOS
+
+No additional services (DB, Redis, etc.) are required.
+
+
+2. Installation
+---------------
+
+1) Go to the repository:
+
+   cd CSharp-Secure-Chat
+
+2) Install backend dependencies:
+
+   cd Server/Server
+   dotnet restore
+
+3) Install frontend dependencies:
+
+   cd ../../Client
+   npm install
+
+
+3. Running the Project
+----------------------
+
+Backend:
+
+1) From the repository root:
+
+   cd Server/Server
+   dotnet run
+
+2) The backend will listen on:
+   http://localhost:5063
+
+   SignalR hub endpoint:
+   http://localhost:5063/chathub
+
+   All environment configuration for the frontend is already set up
+   to use this endpoint. No changes are required.
+
+Frontend:
+
+1) In a separate terminal:
+
+   cd CSharp-Secure-Chat/Client
+   npm start
+
+2) Open the application in the browser:
+
+   http://localhost:4200
+
+You can now:
+- connect to the chat,
+- set a username,
+- send messages,
+- observe ban and anti-spam behavior.
+- open another chat in a separate window
