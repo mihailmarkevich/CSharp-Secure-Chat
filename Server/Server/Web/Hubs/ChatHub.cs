@@ -24,6 +24,8 @@ namespace Server.Web.Hubs
         // connectionId -> userName
         private static readonly ConcurrentDictionary<string, string> _userNames = new();
 
+        // TODO: _nameOwners seems redundant when there's _userNames exists
+        // userName -> connectionId
         private static readonly ConcurrentDictionary<string, string> _nameOwners = new(StringComparer.OrdinalIgnoreCase);
 
         // connectionId -> ip

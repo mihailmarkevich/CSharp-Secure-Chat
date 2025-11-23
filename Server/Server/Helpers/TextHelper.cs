@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using System.Text.Encodings.Web;
 
 namespace Server.Helpers
 {
@@ -13,10 +12,8 @@ namespace Server.Helpers
             if (string.IsNullOrWhiteSpace(input))
                 return string.Empty;
 
-            // Нормализуем Unicode, чтобы умляуты, акценты и т.п. были в нормальной форме
             var text = input.Normalize(NormalizationForm.FormC);
 
-            // Удаляем управляющие символы, кроме \r\n (если разрешены)
             var sb = new StringBuilder(text.Length);
             foreach (var ch in text)
             {
@@ -31,11 +28,30 @@ namespace Server.Helpers
 
             var cleaned = sb.ToString();
 
-            // Ограничиваем длину
             if (cleaned.Length > maxLength)
                 cleaned = cleaned[..maxLength];
 
-            return cleaned;
+            var encoded = new StringBuilder(cleaned.Length);
+            foreach (var ch in cleaned)
+            {
+                switch (ch)
+                {
+                    case '<':
+                        encoded.Append("&lt;");
+                        break;
+                    case '>':
+                        encoded.Append("&gt;");
+                        break;
+                    case '&':
+                        encoded.Append("&amp;");
+                        break;
+                    default:
+                        encoded.Append(ch);
+                        break;
+                }
+            }
+
+            return encoded.ToString();
         }
     }
 }

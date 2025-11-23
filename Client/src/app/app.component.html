@@ -54,14 +54,13 @@
         >
           <div class="message-bubble">
             <div class="message-meta">
-              <span class="author">{{ msg.userName }}</span>
+              <span class="author" [innerHTML]="msg.userName"></span>
               <span class="timestamp">
                 {{ msg.timestamp | date: 'short' }}
               </span>
             </div>
-            <div class="message-text">
-              {{ msg.text }}
-            </div>
+            <div class="message-text" [innerHTML]="msg.text"></div>
+
           </div>
         </div>
 
