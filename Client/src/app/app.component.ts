@@ -26,9 +26,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('messageContainer') messageContainer?: ElementRef<HTMLDivElement>;
 
   nameConfirmed = false;
+  pendingName = '';
   displayName = '';
   messageText = '';
 
+  myConnectionId: string | null = null;
   messages: ChatMessage[] = [];
   banInfo: BanInfo | null = null;
   connectionError: string | null = null;
@@ -39,6 +41,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.subs.push(
+      this.chat.myConnectionId$.subscribe(id => {
+        this.myConnectionId = id;
+      }),
       this.chat.messages$.subscribe(msgs => {
         this.messages = msgs;
         setTimeout(() => this.scrollToBottom(), 0);
@@ -73,7 +78,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async onSetName(): Promise<void> {
-    const trimmed = this.displayName.trim();
+    const trimmed = this.pendingName.trim();
     if (!trimmed) {
       return;
     }
@@ -99,7 +104,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   isOwnMessage(msg: ChatMessage): boolean {
-    return msg.userName === this.displayName;
+    return !!this.myConnectionId && msg.connectionId === this.myConnectionId;
   }
 
   private scrollToBottom(): void {

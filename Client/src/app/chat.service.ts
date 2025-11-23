@@ -9,6 +9,9 @@ import { BanInfo } from './models/ban-info.model';
 export class ChatService {
   private hubConnection?: signalR.HubConnection;
 
+  private myConnectionIdSubject = new BehaviorSubject<string | null>(null);
+  readonly myConnectionId$ = this.myConnectionIdSubject.asObservable();
+
   private messagesSubject = new BehaviorSubject<ChatMessage[]>([]);
   readonly messages$: Observable<ChatMessage[]> = this.messagesSubject.asObservable();
 
@@ -108,6 +111,9 @@ export class ChatService {
 
     try {
       await this.hubConnection!.start();
+
+      this.myConnectionIdSubject.next(this.hubConnection!.connectionId ?? null);
+
       await this.loadHistory();
 
       const savedName = this.currentNameSubject.value?.trim();

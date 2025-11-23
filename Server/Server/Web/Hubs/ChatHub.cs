@@ -136,9 +136,7 @@ namespace Server.Web.Hubs
                         "IP {Ip} exceeded max concurrent connections limit ({Count} >= {Max}). Aborting connection {ConnectionId}.",
                         ip, activeConnections, _maxConnectionsPerIp, Context.ConnectionId);
 
-                    // optionally also ban this IP
-                    //_banService.Ban(ip, _banDuration);
-
+                    // TODO: needs HubException instead. HubExceptions must be well handled.
                     await Clients.Caller.SendAsync("Banned", new
                     {
                         message = "Too many active connections from your IP. Please close some sessions and try again.",
@@ -190,7 +188,8 @@ namespace Server.Web.Hubs
                 {
                     if (!string.IsNullOrEmpty(name))
                     {
-                        if (_nameOwners.TryGetValue(name, out var ownerId) && ownerId == Context.ConnectionId)
+                        if (_nameOwners.TryGetValue(name, out var ownerId) &&
+                            ownerId == Context.ConnectionId)
                         {
                             _nameOwners.TryRemove(name, out _);
                         }
@@ -273,6 +272,9 @@ namespace Server.Web.Hubs
                 // update username for this connection
                 _userNames[Context.ConnectionId] = trimmed;
 
+                // update username on user's previous messages by connectionId
+                await _messageStore.UpdateUserNameAsync(connectionId, trimmed);
+
                 _logger.LogInformation(
                     "User {ConnectionId} changed name to {UserName} (IP {Ip})",
                     Context.ConnectionId, trimmed, ip);
@@ -337,6 +339,7 @@ namespace Server.Web.Hubs
 
                 var message = new ChatMessage
                 {
+                    ConnectionId = Context.ConnectionId,
                     UserName = userName,
                     Text = text,
                     Timestamp = DateTimeOffset.UtcNow

@@ -34,6 +34,19 @@ namespace Server.Infrastructure.Chat
 
             return Task.FromResult<IReadOnlyList<ChatMessage>>(sliced);
         }
+
+        public Task UpdateUserNameAsync(string connectionId, string newUserName)
+        {
+            foreach (var msg in _messages)
+            {
+                if (string.Equals(msg.ConnectionId, connectionId, StringComparison.Ordinal))
+                {
+                    msg.UserName = newUserName;
+                }
+            }
+
+            return Task.CompletedTask;
+        }
     }
 
 }

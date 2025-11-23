@@ -31,14 +31,15 @@
         Your name:
         <input
           type="text"
-          [(ngModel)]="displayName"
+          [(ngModel)]="pendingName"
+          [disabled]="!isConnected || !!banInfo"
           maxlength="50"
           placeholder="Enter your name"
         />
       </label>
       <button
         (click)="onSetName()"
-        [disabled]="!displayName.trim() || !isConnected || !!banInfo"
+        [disabled]="!pendingName.trim() || !isConnected || !!banInfo"
       >
         Set name
       </button>
