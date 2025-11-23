@@ -24,6 +24,8 @@ namespace Server.Web.Hubs
         // connectionId -> userName
         private static readonly ConcurrentDictionary<string, string> _userNames = new();
 
+        private static readonly ConcurrentDictionary<string, string> _nameOwners = new(StringComparer.OrdinalIgnoreCase);
+
         // connectionId -> ip
         private static readonly ConcurrentDictionary<string, string> _connectionIps = new();
 
@@ -103,7 +105,7 @@ namespace Server.Web.Hubs
                 retryAfterSeconds = (int)_banDuration.TotalSeconds
             });
 
-            // Disconnect only the current connection
+            // Disconnect the current connection
             Context.Abort();
         }
         #endregion
@@ -186,6 +188,14 @@ namespace Server.Web.Hubs
 
                 if (_userNames.TryRemove(Context.ConnectionId, out var name))
                 {
+                    if (!string.IsNullOrEmpty(name))
+                    {
+                        if (_nameOwners.TryGetValue(name, out var ownerId) && ownerId == Context.ConnectionId)
+                        {
+                            _nameOwners.TryRemove(name, out _);
+                        }
+                    }
+
                     _logger.LogInformation(
                         "Client disconnected: {ConnectionId} ({UserName}) from IP {Ip}",
                         Context.ConnectionId, name, ip ?? UnknownIp);
@@ -217,6 +227,7 @@ namespace Server.Web.Hubs
             try
             {
                 var ip = GetClientIpOrUnknown();
+                var connectionId = Context.ConnectionId;
 
                 if (await HandleIfBannedAsync(ip, "ChangeName"))
                     return;
@@ -236,6 +247,30 @@ namespace Server.Web.Hubs
                     return;
                 }
 
+                // current name (if exists)
+                _userNames.TryGetValue(connectionId, out var oldName);
+
+                // if name isn't changed - do nothing
+                if (!string.IsNullOrEmpty(oldName) && string.Equals(oldName, trimmed, StringComparison.OrdinalIgnoreCase))
+                    return;
+
+                // try to reserve new name
+                if (!_nameOwners.TryAdd(trimmed, connectionId))
+                {
+                    if (_nameOwners.TryGetValue(trimmed, out var existingOwner) &&
+                        !string.Equals(existingOwner, connectionId, StringComparison.Ordinal))
+                    {
+                        throw new HubException("This user name is already taken. Please choose another one.");
+                    }
+                }
+
+                // set the previous name free
+                if (!string.IsNullOrEmpty(oldName) && !string.Equals(oldName, trimmed, StringComparison.OrdinalIgnoreCase))
+                {
+                    _nameOwners.TryRemove(oldName, out _);
+                }
+
+                // update username for this connection
                 _userNames[Context.ConnectionId] = trimmed;
 
                 _logger.LogInformation(
@@ -243,6 +278,10 @@ namespace Server.Web.Hubs
                     Context.ConnectionId, trimmed, ip);
 
                 await Clients.All.SendAsync("UserNameChanged", Context.ConnectionId, trimmed);
+            }
+            catch (HubException)
+            {
+                throw;
             }
             catch (Exception ex)
             {

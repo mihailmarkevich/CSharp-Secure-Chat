@@ -15,6 +15,8 @@ export class ChatService {
   private banInfoSubject = new BehaviorSubject<BanInfo | null>(null);
   readonly banInfo$: Observable<BanInfo | null> = this.banInfoSubject.asObservable();
 
+  private banTimer: any = null;
+
   private connectionErrorSubject = new BehaviorSubject<string | null>(null);
   readonly connectionError$: Observable<string | null> = this.connectionErrorSubject.asObservable();
 
@@ -67,6 +69,28 @@ export class ChatService {
     this.hubConnection.on('Banned', (payload: BanInfo) => {
       this.banInfoSubject.next(payload);
       this.hubConnection?.stop().catch(() => {});
+
+      if (this.banTimer) {
+        clearTimeout(this.banTimer);
+        this.banTimer = null;
+      }
+
+      const seconds = payload.retryAfterSeconds ?? 0;
+
+      if (seconds > 0) {
+        const milis = seconds * 1000 + 100;
+        
+        this.banTimer = setTimeout(() => {
+          this.banInfoSubject.next(null);
+          this.connectionErrorSubject.next(null);
+
+          this.connect().catch(() => {
+            //
+          });
+
+          this.banTimer = null;
+        }, milis);
+      }      
     });
   }
 
@@ -85,18 +109,23 @@ export class ChatService {
     try {
       await this.hubConnection!.start();
       await this.loadHistory();
+
+      const savedName = this.currentNameSubject.value?.trim();
+      if (savedName) {
+        await this.changeName(savedName);
+      }
     } catch (error: any) {
-      const statusCode = (error && typeof error === 'object' && 'statusCode' in error)
-        ? (error as any).statusCode
-        : undefined;
+      const statusCode =
+        error && typeof error === 'object' && 'statusCode' in error
+          ? (error as any).statusCode
+          : undefined;
 
       const message: string = error?.message ?? '';
 
       if (statusCode === 403 || message.includes('403')) {
-        this.banInfoSubject.next({
-          message: 'You are temporarily blocked or banned by the server.',
-          retryAfterSeconds: undefined
-        });
+        this.connectionErrorSubject.next(
+          'You are temporarily blocked by the server. Please wait a few seconds and try again.'
+        );
       } else {
         this.connectionErrorSubject.next(
           'Failed to connect to the chat server. Please try again later.'
@@ -106,6 +135,11 @@ export class ChatService {
   }
 
   async disconnect(): Promise<void> {
+    if (this.banTimer) {
+      clearTimeout(this.banTimer);
+      this.banTimer = null;
+    }
+    
     if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
       await this.hubConnection.stop();
     }
@@ -151,8 +185,14 @@ export class ChatService {
       return;
     }
 
-    await this.hubConnection.invoke('ChangeName', trimmed);
-    this.currentNameSubject.next(trimmed);
+    try {
+      await this.hubConnection.invoke('ChangeName', trimmed);
+      this.currentNameSubject.next(trimmed);
+      this.connectionErrorSubject.next(null);
+    } catch (error: any) {
+      const msg = error?.message ?? 'Failed to change user name.';
+      this.connectionErrorSubject.next(msg);
+    }
   }
 
   get isConnected(): boolean {
