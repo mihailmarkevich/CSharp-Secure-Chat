@@ -16,10 +16,8 @@
       <div *ngIf="banInfo" class="banner banner-error">
         <strong>Banned:</strong>
         <span>{{ banInfo.message }}</span>
-        <span *ngIf="banInfo.retryAfterSeconds">
-          (Retry after {{ banInfo.retryAfterSeconds }}s)
-        </span>
       </div>
+
 
       <div *ngIf="connectionError && !banInfo" class="banner banner-warning">
         {{ connectionError }}

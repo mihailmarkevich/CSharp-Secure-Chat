@@ -18,8 +18,6 @@ export class ChatService {
   private banInfoSubject = new BehaviorSubject<BanInfo | null>(null);
   readonly banInfo$: Observable<BanInfo | null> = this.banInfoSubject.asObservable();
 
-  private banTimer: any = null;
-
   private connectionErrorSubject = new BehaviorSubject<string | null>(null);
   readonly connectionError$: Observable<string | null> = this.connectionErrorSubject.asObservable();
 
@@ -46,21 +44,10 @@ export class ChatService {
       return;
     }
 
-    this.hubConnection.on(
-      'ReceiveMessage',
-      (id: string, connectionId: string, userName: string, text: string, timestamp: string) => {
-        const msg: ChatMessage = {
-          id,
-          connectionId,
-          userName,
-          text,
-          timestamp
-        };
-
-        const current = this.messagesSubject.value;
-        this.messagesSubject.next([...current, msg]);
-      }
-    );
+    this.hubConnection.on('ReceiveMessage', (msg: ChatMessage) => {
+      const current = this.messagesSubject.value;
+      this.messagesSubject.next([...current, msg]);
+    });
 
     this.hubConnection.on('UserNameChanged', (connectionId: string, newName: string) => {
       const updated = this.messagesSubject.value.map(m =>
@@ -70,32 +57,63 @@ export class ChatService {
     });
 
     this.hubConnection.on('Banned', (payload: BanInfo) => {
-      this.banInfoSubject.next(payload);
-      this.hubConnection?.stop().catch(() => {});
-
-      if (this.banTimer) {
-        clearTimeout(this.banTimer);
-        this.banTimer = null;
-      }
-
-      const seconds = payload.retryAfterSeconds ?? 0;
-
-      if (seconds > 0) {
-        const milis = seconds * 1000 + 100;
-        
-        this.banTimer = setTimeout(() => {
-          this.banInfoSubject.next(null);
-          this.connectionErrorSubject.next(null);
-
-          this.connect().catch(() => {
-            //
-          });
-
-          this.banTimer = null;
-        }, milis);
-      }      
+      this.handleBan(payload);
     });
   }
+
+  // helpers
+
+  private extractHubErrorMessage(error: any): string {
+    if (!error) {
+      return 'Unexpected error.';
+    }
+
+    let raw = '';
+
+    if (typeof error === 'string') {
+      raw = error;
+    } else if (error.message && typeof error.message === 'string') {
+      raw = error.message;
+    } else {
+      try {
+        raw = JSON.stringify(error);
+      } catch {
+        raw = String(error);
+      }
+    }
+
+    const marker = 'HubException:';
+    const idx = raw.indexOf(marker);
+    if (idx >= 0) {
+      return raw.substring(idx + marker.length).trim();
+    }
+
+    return raw || 'Unexpected error.';
+  }
+
+  private handleHubError(error: any): void {
+    const msg = this.extractHubErrorMessage(error);
+    const lower = msg.toLowerCase();
+
+    if (lower.includes('temporarily') && (lower.includes('blocked') || lower.includes('banned'))) {
+      const banInfo: BanInfo = {
+        message: msg
+      };
+
+      this.handleBan(banInfo);
+    } else {
+      this.connectionErrorSubject.next(msg);
+    }
+  }
+
+  private handleBan(payload: BanInfo): void {
+    this.banInfoSubject.next(payload);
+    this.connectionErrorSubject.next(null);
+
+    this.hubConnection?.stop().catch(() => {});
+  }
+
+  // public methods
 
   async connect(): Promise<void> {
     if (!this.hubConnection) {
@@ -141,11 +159,6 @@ export class ChatService {
   }
 
   async disconnect(): Promise<void> {
-    if (this.banTimer) {
-      clearTimeout(this.banTimer);
-      this.banTimer = null;
-    }
-    
     if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
       await this.hubConnection.stop();
     }
@@ -163,6 +176,7 @@ export class ChatService {
       );
       this.messagesSubject.next(sorted);
     } catch {
+      //
     }
   }
 
@@ -177,7 +191,11 @@ export class ChatService {
       return;
     }
 
-    await this.hubConnection.invoke('SendMessage', trimmed);
+    try {
+      await this.hubConnection.invoke('SendMessage', trimmed);
+    } catch (error: any) {
+      this.handleHubError(error);
+    }
   }
 
   async changeName(name: string): Promise<void> {
@@ -196,8 +214,7 @@ export class ChatService {
       this.currentNameSubject.next(trimmed);
       this.connectionErrorSubject.next(null);
     } catch (error: any) {
-      const msg = error?.message ?? 'Failed to change user name.';
-      this.connectionErrorSubject.next(msg);
+      this.handleHubError(error);
     }
   }
 

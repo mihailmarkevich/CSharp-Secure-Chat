@@ -7,6 +7,7 @@ using Server.Web.Hubs;
 using Server.Web.Middleware;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.Net;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,6 +53,12 @@ builder.Services
 builder.Services.AddSingleton<IMessageStore, InMemoryMessageStore>();
 builder.Services.AddSingleton<IBanService, InMemoryBanService>();
 builder.Services.AddSingleton<IRateLimitService, InMemoryRateLimitService>();
+builder.Services.AddSingleton<IConnectionRegistry>(sp =>
+{
+    var opts = sp.GetRequiredService<IOptions<SpamProtectionOptions>>().Value;
+    return new InMemoryConnectionRegistry(opts.MaxConnectionsPerIp);
+});
+builder.Services.AddScoped<IChatService, ChatService>();
 
 builder.Services.AddLogging(logging =>
 {
