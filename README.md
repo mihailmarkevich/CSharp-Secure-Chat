@@ -43,11 +43,6 @@ Backend responsibilities:
 
 Frontend intentionally uses `[innerHTML]` → backend ensures all sanitization.
 
-### Tests
-
-There are **no test projects** in this repository.  
-Tests were intentionally removed to simplify review and installation for external users.
-
 ---
 
 ## Chat Functionality
@@ -177,7 +172,7 @@ Works on:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-account>/CSharp-Secure-Chat.git
+git clone https://github.com/mihailmarkevich/CSharp-Secure-Chat.git
 cd CSharp-Secure-Chat
 ```
 
@@ -208,8 +203,7 @@ dotnet run
 
 Backend default URLs:
 
-- http://localhost:5000  
-- https://localhost:5001
+- http://localhost:5063
 
 ### Configure frontend environment
 
@@ -218,11 +212,10 @@ File: `Client/src/environments/environment.ts`
 ```ts
 export const environment = {
   production: false,
-  chatHubUrl: "https://localhost:5001/chathub"
+  chatHubUrl: "https://localhost:5063/chathub"
 };
 ```
 
-(or http://localhost:5000/chathub)
 
 ### Start frontend
 
